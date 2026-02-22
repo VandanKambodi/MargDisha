@@ -1,92 +1,134 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  profile: {
-    age: Number,
-    gender: {
+const userSchema = new mongoose.Schema(
+  {
+    name: {
       type: String,
-      enum: ['male', 'female', 'other']
+      required: true,
+      trim: true,
     },
-    class: {
+    email: {
       type: String,
-      enum: ['10', '11', '12', 'graduate', 'postgraduate']
+      required: true,
+      unique: true,
+      lowercase: true,
     },
-    location: {
-      state: String,
-      district: String,
-      city: String
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
     },
-    interests: [String],
-    academicBackground: {
-      stream: {
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    profile: {
+      age: Number,
+      gender: {
         type: String,
-        enum: ['science', 'commerce', 'arts', 'diploma']
+        enum: ["male", "female", "other"],
       },
-      subjects: [String],
-      percentage: Number
-    }
+      class: {
+        type: String,
+        enum: ["10", "11", "12", "graduate", "postgraduate"],
+      },
+      location: {
+        state: String,
+        district: String,
+        city: String,
+      },
+      interests: [String],
+      academicBackground: {
+        stream: {
+          type: String,
+          enum: ["science", "commerce", "arts", "diploma"],
+        },
+        subjects: [String],
+        percentage: Number,
+      },
+    },
+    quizResults: [
+      {
+        quizType: String,
+        score: Number,
+        recommendations: [String],
+        questionsUsed: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Question",
+          },
+        ],
+        completedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    questionHistory: [
+      {
+        questionId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Question",
+        },
+        usedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        quizNumber: Number,
+      },
+    ],
+    savedColleges: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "College",
+      },
+    ],
+    savedCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
   },
-  quizResults: [{
-    quizType: String,
-    score: Number,
-    recommendations: [String],
-    questionsUsed: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Question'
-    }],
-    completedAt: {
-      type: Date,
-      default: Date.now
-    }
-  }],
-  questionHistory: [{
-    questionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Question'
-    },
-    usedAt: {
-      type: Date,
-      default: Date.now
-    },
-    quizNumber: Number
-  }],
-  savedColleges: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'College'
-  }],
-  savedCourses: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Course'
-  }]
-}, {
-  timestamps: true
-});
+  {
+    timestamps: true,
+  },
+);
 
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-userSchema.methods.comparePassword = async function(password) {
+userSchema.methods.comparePassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+userSchema.methods.createEmailVerificationToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+  this.emailVerificationToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+  return token;
+};
+
+userSchema.methods.createPasswordResetToken = function () {
+  const token = crypto.randomBytes(32).toString("hex");
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  this.passwordResetExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+  return token;
+};
+
+module.exports = mongoose.model("User", userSchema);
