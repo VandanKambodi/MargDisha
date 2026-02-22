@@ -27,13 +27,12 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-white/70 dark:bg-[#0f172a]/80 border-b border-gray-100 dark:border-gray-800 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex justify-between items-center h-20">
-          
           {/* --- LOGO AREA --- */}
           <Link to="/" className="flex items-center space-x-3 group">
             <div className="relative flex items-center justify-center">
-              <img 
-                src={logo} 
-                alt="MargDisha Logo" 
+              <img
+                src={logo}
+                alt="MargDisha Logo"
                 className="h-12 w-auto group-hover:rotate-6 transition-transform duration-500"
               />
             </div>
@@ -54,9 +53,11 @@ const Navbar = () => {
                 key={link.path}
                 to={link.path}
                 className={`px-4 py-2 rounded-xl text-sm font-bold tracking-tight transition-all duration-200 
-                  ${isActive(link.path) 
-                    ? "text-[#e67e22] bg-orange-50 dark:bg-orange-900/10" 
-                    : "text-gray-600 dark:text-gray-400 hover:text-[#3498db] hover:bg-blue-50 dark:hover:bg-blue-900/10"}`}
+                  ${
+                    isActive(link.path)
+                      ? "text-[#e67e22] bg-orange-50 dark:bg-orange-900/10"
+                      : "text-gray-600 dark:text-gray-400 hover:text-[#3498db] hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                  }`}
               >
                 {link.name}
               </Link>
@@ -73,7 +74,7 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
-                
+
                 <Link
                   to="/profile"
                   className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1e4b6e] to-[#3498db] flex items-center justify-center text-white font-bold text-xs border-2 border-white dark:border-gray-800 shadow-md hover:scale-105 transition-transform"
@@ -93,7 +94,7 @@ const Navbar = () => {
             ) : (
               <div className="flex items-center space-x-3">
                 <ThemeToggle />
-                
+
                 <Link
                   to="/login"
                   className="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-[#3498db] transition-colors"
@@ -114,15 +115,30 @@ const Navbar = () => {
           {/* --- MOBILE TOGGLE --- */}
           <div className="md:hidden flex items-center space-x-3">
             <ThemeToggle />
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 shadow-inner"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 {isMobileMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 8h16M4 16h16" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M4 8h16M4 16h16"
+                  />
                 )}
               </svg>
             </button>
@@ -146,14 +162,43 @@ const Navbar = () => {
           <hr className="border-gray-100 dark:border-gray-800" />
           {user ? (
             <>
-              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block font-bold text-[#3498db]">Dashboard</Link>
-              <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)} className="block font-bold text-gray-700 dark:text-gray-200">Profile</Link>
-              <button onClick={handleLogout} className="block font-bold text-red-500">Logout</button>
+              <Link
+                to="/dashboard"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block font-bold text-[#3498db]"
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/profile"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block font-bold text-gray-700 dark:text-gray-200"
+              >
+                Profile
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="block font-bold text-red-500"
+              >
+                Logout
+              </button>
             </>
           ) : (
             <div className="grid grid-cols-2 gap-4 pt-2">
-              <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="py-3 text-center rounded-xl bg-gray-50 dark:bg-gray-800 font-bold text-gray-700 dark:text-gray-300">Login</Link>
-              <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="py-3 text-center rounded-xl bg-[#e67e22] text-white font-bold shadow-lg">Sign Up</Link>
+              <Link
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-3 text-center rounded-xl bg-gray-50 dark:bg-gray-800 font-bold text-gray-700 dark:text-gray-300"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="py-3 text-center rounded-xl bg-[#e67e22] text-white font-bold shadow-lg"
+              >
+                Sign Up
+              </Link>
             </div>
           )}
         </div>
