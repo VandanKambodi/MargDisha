@@ -9,6 +9,7 @@ const profileRoutes = require("./routes/profile");
 const quizRoutes = require("./routes/quiz");
 const streamQuizRoutes = require("./routes/streamQuiz");
 const externalCollegesRoutes = require("./routes/externalColleges");
+const savedRoutes = require("./routes/saved");
 
 const app = express();
 
@@ -24,6 +25,8 @@ app.use("/api/quiz", quizRoutes);
 app.use("/api/stream-quiz", streamQuizRoutes);
 // Colleges & courses – all from external API, no DB
 app.use("/api/external-colleges", externalCollegesRoutes);
+// Saved colleges & courses – per user, stored in DB
+app.use("/api/saved", savedRoutes);
 
 // MongoDB connection
 mongoose

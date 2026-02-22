@@ -1,12 +1,12 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from "axios";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -17,18 +17,23 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         try {
           // Verify token by fetching user info
-          const response = await axios.get('http://localhost:5000/api/auth/verify');
+          const response = await axios.get(
+            "http://localhost:5000/api/auth/verify",
+          );
           setUser(response.data.user);
         } catch (error) {
           // Token is invalid, remove it
-          console.log('Token verification failed:', error.response?.data?.message);
-          localStorage.removeItem('token');
-          delete axios.defaults.headers.common['Authorization'];
+          console.log(
+            "Token verification failed:",
+            error.response?.data?.message,
+          );
+          localStorage.removeItem("token");
+          delete axios.defaults.headers.common["Authorization"];
           setUser(null);
         }
       }
@@ -40,59 +45,76 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password
-      });
-      
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/login",
+        {
+          email,
+          password,
+        },
+      );
+
       const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       setUser(user);
-      
+
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Login failed' 
+      return {
+        success: false,
+        needsVerification: error.response?.data?.needsVerification || false,
+        email: error.response?.data?.email || "",
+        message: error.response?.data?.message || "Login failed",
       };
     }
   };
 
+  // Used after email verification or password reset (auto-login with token from API)
+  const loginWithToken = (token, userData) => {
+    localStorage.setItem("token", token);
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    setUser(userData);
+  };
+
   const register = async (name, email, password) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/register', {
-        name,
-        email,
-        password
-      });
-      
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(user);
-      
-      return { success: true };
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/register",
+        {
+          name,
+          email,
+          password,
+        },
+      );
+
+      // No auto-login — user needs to verify email first
+      return {
+        success: true,
+        needsVerification: true,
+        message: response.data.message,
+      };
     } catch (error) {
-      return { 
-        success: false, 
-        message: error.response?.data?.message || 'Registration failed' 
+      return {
+        success: false,
+        needsVerification: error.response?.data?.needsVerification || false,
+        message: error.response?.data?.message || "Registration failed",
       };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem("token");
+    delete axios.defaults.headers.common["Authorization"];
     setUser(null);
   };
 
   const value = {
     user,
     login,
+    loginWithToken,
     register,
     logout,
-    loading
+    loading,
   };
 
   return (

@@ -1,13 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../contexts/AuthContext";
 
 const API = "http://localhost:5000/api/external-colleges";
+const SAVED_API = "http://localhost:5000/api/saved";
 
 const Colleges = () => {
+  const { user } = useAuth();
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [savedCollegeIds, setSavedCollegeIds] = useState(new Set());
+  const [savingId, setSavingId] = useState(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -26,6 +31,48 @@ const Colleges = () => {
 
   // Detail modal
   const [selectedCollege, setSelectedCollege] = useState(null);
+
+  // ── Fetch saved college IDs on mount (if logged in) ────────────────
+  useEffect(() => {
+    if (user) {
+      axios
+        .get(`${SAVED_API}/ids`)
+        .then((res) => {
+          if (res.data.success)
+            setSavedCollegeIds(new Set(res.data.collegeIds));
+        })
+        .catch((err) => console.error("Error fetching saved IDs:", err));
+    } else {
+      setSavedCollegeIds(new Set());
+    }
+  }, [user]);
+
+  // ── Save / Unsave college ──────────────────────────────────────────
+  const toggleSaveCollege = async (college) => {
+    if (!user) {
+      alert("Please login to save colleges");
+      return;
+    }
+    const id = college._id;
+    setSavingId(id);
+    try {
+      if (savedCollegeIds.has(id)) {
+        await axios.delete(`${SAVED_API}/college/${encodeURIComponent(id)}`);
+        setSavedCollegeIds((prev) => {
+          const n = new Set(prev);
+          n.delete(id);
+          return n;
+        });
+      } else {
+        await axios.post(`${SAVED_API}/college`, { college });
+        setSavedCollegeIds((prev) => new Set(prev).add(id));
+      }
+    } catch (err) {
+      console.error("Error saving college:", err);
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   // ── Fetch states on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -408,6 +455,21 @@ const Colleges = () => {
                   >
                     View Courses
                   </button>
+                  <button
+                    onClick={() => toggleSaveCollege(college)}
+                    disabled={savingId === college._id}
+                    className={`px-4 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest border-2 transition-all ${
+                      savedCollegeIds.has(college._id)
+                        ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-500 hover:bg-red-100"
+                        : "border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                    } disabled:opacity-50`}
+                  >
+                    {savingId === college._id
+                      ? "..."
+                      : savedCollegeIds.has(college._id)
+                        ? "♥ Saved"
+                        : "♡ Save"}
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -626,11 +688,26 @@ const Colleges = () => {
                   </p>
                 </div>
 
-                {/* Close */}
-                <div className="mt-6">
+                {/* Save + Close */}
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={() => toggleSaveCollege(selectedCollege)}
+                    disabled={savingId === selectedCollege._id}
+                    className={`flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all transform active:scale-95 ${
+                      savedCollegeIds.has(selectedCollege._id)
+                        ? "bg-red-500 text-white shadow-lg shadow-red-500/20"
+                        : "bg-green-500 text-white shadow-lg shadow-green-500/20"
+                    } disabled:opacity-50`}
+                  >
+                    {savingId === selectedCollege._id
+                      ? "Saving..."
+                      : savedCollegeIds.has(selectedCollege._id)
+                        ? "♥ Remove from Saved"
+                        : "♡ Save College"}
+                  </button>
                   <button
                     onClick={() => setSelectedCollege(null)}
-                    className="w-full px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all transform active:scale-95"
+                    className="flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all transform active:scale-95"
                   >
                     Close
                   </button>
