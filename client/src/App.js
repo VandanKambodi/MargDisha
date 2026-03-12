@@ -51,11 +51,46 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/quiz" element={<Quiz />} />
-        <Route path="/psychometric-test" element={<PsychometricTest />} />
-        <Route path="/career-results" element={<CareerResults />} />
-        <Route path="/colleges" element={<Colleges />} />
-        <Route path="/courses" element={<Courses />} />
+        <Route
+          path="/quiz"
+          element={
+            <ProtectedRoute>
+              <Quiz />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/psychometric-test"
+          element={
+            <ProtectedRoute>
+              <PsychometricTest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/career-results"
+          element={
+            <ProtectedRoute>
+              <CareerResults />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/colleges"
+          element={
+            <ProtectedRoute>
+              <Colleges />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/courses"
+          element={
+            <ProtectedRoute>
+              <Courses />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/saved-colleges"
           element={

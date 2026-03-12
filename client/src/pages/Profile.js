@@ -3,6 +3,11 @@ import { useAuth } from "../contexts/AuthContext";
 import axios from "axios";
 import { motion } from "framer-motion";
 
+const API = "http://localhost:5000/api/external-colleges";
+
+// Helper function to capitalize first letter
+const capitalize = (str) => str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : "";
+
 const Profile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState({
@@ -16,6 +21,8 @@ const Profile = () => {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
 
   const interestOptions = [
     "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science",
@@ -30,7 +37,35 @@ const Profile = () => {
     diploma: ["Computer Applications", "Multimedia", "Tourism", "Fashion Design", "Agriculture"],
   };
 
+  const genderOptions = ["Male", "Female", "Other"];
+  const classOptions = ["10", "11", "12", "Graduate", "Postgraduate"];
+  const streamOptions = ["Science", "Commerce", "Arts", "Diploma"];
+
   useEffect(() => { fetchProfile(); }, []);
+
+  // Fetch states on mount
+  useEffect(() => {
+    axios
+      .get(`${API}/filters/states`)
+      .then((res) => {
+        if (res.data.success) setStates(res.data.states);
+      })
+      .catch((err) => console.error("Error fetching states:", err));
+  }, []);
+
+  // Fetch districts when state changes
+  useEffect(() => {
+    if (profile.location.state) {
+      axios
+        .get(`${API}/filters/districts/${encodeURIComponent(profile.location.state)}`)
+        .then((res) => {
+          if (res.data.success) setDistricts(res.data.districts);
+        })
+        .catch((err) => console.error("Error fetching districts:", err));
+    } else {
+      setDistricts([]);
+    }
+  }, [profile.location.state]);
 
   const fetchProfile = async () => {
     try {
@@ -43,7 +78,7 @@ const Profile = () => {
         const profileData = response.data.profile;
         setProfile({
           age: profileData.personalInfo?.age || "",
-          gender: profileData.personalInfo?.gender || "",
+          gender: capitalize(profileData.personalInfo?.gender || ""),
           class: profileData.academicInfo?.currentClass || "",
           location: {
             state: profileData.location?.state || "",
@@ -52,7 +87,7 @@ const Profile = () => {
           },
           interests: profileData.careerPreferences?.interests?.map((i) => i.name) || [],
           academicBackground: {
-            stream: profileData.academicInfo?.stream || "",
+            stream: capitalize(profileData.academicInfo?.stream || ""),
             subjects: profileData.academicInfo?.subjects?.map((s) => s.name) || [],
             percentage: profileData.academicInfo?.currentPercentage || "",
           },
@@ -101,10 +136,10 @@ const Profile = () => {
     try {
       const token = localStorage.getItem("token");
       const profileData = {
-        personalInfo: { age: profile.age, gender: profile.gender },
+        personalInfo: { age: profile.age, gender: profile.gender.toLowerCase() },
         academicInfo: {
           currentClass: profile.class,
-          stream: profile.academicBackground.stream,
+          stream: profile.academicBackground.stream.toLowerCase(),
           currentPercentage: profile.academicBackground.percentage,
           subjects: profile.academicBackground.subjects.map((s) => ({
             name: s, grade: "", marks: 0, maxMarks: 100,
@@ -170,8 +205,8 @@ const Profile = () => {
               <SectionHeader title="Basic Demographics" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <FloatingInput label="Age" type="number" value={profile.age} onChange={(e) => handleInputChange("age", e.target.value)} />
-                <FloatingSelect label="Gender" value={profile.gender} onChange={(e) => handleInputChange("gender", e.target.value)} options={["male", "female", "other"]} />
-                <FloatingSelect label="Class Level" value={profile.class} onChange={(e) => handleInputChange("class", e.target.value)} options={["10", "11", "12", "graduate", "postgraduate"]} />
+                <FloatingSelect label="Gender" value={profile.gender} onChange={(e) => handleInputChange("gender", e.target.value)} options={genderOptions} />
+                <FloatingSelect label="Class Level" value={profile.class} onChange={(e) => handleInputChange("class", e.target.value)} options={classOptions} />
               </div>
             </section>
 
@@ -179,8 +214,12 @@ const Profile = () => {
             <section className="space-y-6">
               <SectionHeader title="Geographic Presence" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <FloatingInput label="State" value={profile.location.state} onChange={(e) => handleInputChange("location.state", e.target.value)} />
-                <FloatingInput label="District" value={profile.location.district} onChange={(e) => handleInputChange("location.district", e.target.value)} />
+                <FloatingSelect label="State" value={profile.location.state} onChange={(e) => {
+                  handleInputChange("location.state", e.target.value);
+                  // Reset district when state changes
+                  handleInputChange("location.district", "");
+                }} options={states} />
+                <FloatingSelect label="District" value={profile.location.district} onChange={(e) => handleInputChange("location.district", e.target.value)} options={districts} disabled={!profile.location.state} />
                 <FloatingInput label="City" value={profile.location.city} onChange={(e) => handleInputChange("location.city", e.target.value)} />
               </div>
             </section>
@@ -195,14 +234,14 @@ const Profile = () => {
             <section className="space-y-6">
               <SectionHeader title="Academic Performance" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                <FloatingSelect label="Academic Stream" value={profile.academicBackground.stream} onChange={(e) => handleInputChange("academicBackground.stream", e.target.value)} options={["science", "commerce", "arts", "diploma"]} />
+                <FloatingSelect label="Academic Stream" value={profile.academicBackground.stream} onChange={(e) => handleInputChange("academicBackground.stream", e.target.value)} options={streamOptions} />
                 <FloatingInput label="Recent Percentage (%)" type="number" value={profile.academicBackground.percentage} onChange={(e) => handleInputChange("academicBackground.percentage", e.target.value)} />
               </div>
               
               {profile.academicBackground.stream && (
                 <div className="mt-8 animate-fadeIn">
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 ml-1">Stream Specific Subjects</p>
-                  <SelectableCards options={subjectOptions[profile.academicBackground.stream]} selected={profile.academicBackground.subjects} onChange={handleSubjectChange} themeColor="[#3498db]" />
+                  <SelectableCards options={subjectOptions[profile.academicBackground.stream.toLowerCase()]} selected={profile.academicBackground.subjects} onChange={handleSubjectChange} themeColor="[#3498db]" />
                 </div>
               )}
             </section>
@@ -247,11 +286,11 @@ const FloatingInput = ({ label, value, onChange, type = "text" }) => (
   </div>
 );
 
-const FloatingSelect = ({ label, value, onChange, options }) => (
+const FloatingSelect = ({ label, value, onChange, options, disabled = false }) => (
   <div className="relative group">
-    <select value={value} onChange={onChange}
-      className="peer w-full px-5 pt-6 pb-2 rounded-2xl bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 focus:ring-2 focus:ring-[#3498db] outline-none transition-all font-bold text-gray-700 dark:text-white text-sm appearance-none cursor-pointer">
-      <option value=""></option>
+    <select value={value} onChange={onChange} disabled={disabled}
+      className="peer w-full px-5 pt-6 pb-2 rounded-2xl bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 focus:ring-2 focus:ring-[#3498db] outline-none transition-all font-bold text-gray-700 dark:text-white text-sm appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+      <option value="">Select...</option>
       {options.map((o) => <option key={o} value={o} className="dark:bg-[#1e293b]">{o}</option>)}
     </select>
     <label className="absolute left-5 top-2 text-[10px] font-black uppercase tracking-tighter text-gray-400 transition-all pointer-events-none">{label}</label>

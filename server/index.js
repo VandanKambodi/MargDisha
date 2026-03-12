@@ -11,6 +11,15 @@ const streamQuizRoutes = require("./routes/streamQuiz");
 const externalCollegesRoutes = require("./routes/externalColleges");
 const savedRoutes = require("./routes/saved");
 
+// Import all models to register them with Mongoose
+require("./models/User");
+require("./models/Profile");
+require("./models/College");
+require("./models/Course");
+require("./models/Question");
+require("./models/Quiz");
+require("./models/SavedItem");
+
 const app = express();
 
 // Middleware
