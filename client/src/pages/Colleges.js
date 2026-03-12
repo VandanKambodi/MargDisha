@@ -218,8 +218,7 @@ const Colleges = () => {
             College <span className="text-[#e67e22]">Navigator</span>
           </h1>
           <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg font-medium">
-            Browse 38,000+ Indian colleges live from official AISHE data. No
-            data stored — everything is fetched in real-time.
+            Browse 38,000+ Indian colleges live from official AISHE data.
           </p>
         </div>
 
@@ -550,103 +549,101 @@ const Colleges = () => {
       {/* ══════════════════════════════════════════════════════════════════
           DETAIL MODAL  –  shows courses from external API
          ══════════════════════════════════════════════════════════════════ */}
+      {/* --- COLLEGE DETAIL MODAL WITH SCROLLING FIX --- */}
       <AnimatePresence>
         {selectedCollege && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSelectedCollege(null)}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-[#0f172a]/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 md:p-6"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-[#1e293b] rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-[#1e293b] rounded-[3rem] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative border border-white dark:border-gray-800 overflow-hidden"
             >
-              {/* Modal header */}
-              <div className="sticky top-0 bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white p-8 rounded-t-3xl flex justify-between items-start z-10">
-                <div className="flex-1 pr-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-3 py-1 bg-white/20 text-[9px] font-black uppercase tracking-widest rounded-lg">
+              {/* Close Button - Fixed Position */}
+              <button
+                onClick={() => setSelectedCollege(null)}
+                className="absolute top-6 right-8 w-12 h-12 flex items-center justify-center rounded-2xl bg-gray-50 dark:bg-[#0f172a] text-gray-400 hover:text-red-500 transition-colors z-50 font-black"
+              >
+                ✕
+              </button>
+
+              {/* Scrollable Content Container */}
+              <div className="overflow-y-auto p-10 md:p-14 pt-16 scrollbar-hide">
+                {/* Header Section */}
+                <div className="mb-12">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-4 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-[#3498db] text-[10px] font-black uppercase rounded-lg">
                       {selectedCollege.type}
                     </span>
-                    <span className="px-3 py-1 bg-white/20 text-[9px] font-black uppercase tracking-widest rounded-lg">
+                    <span
+                      className={`px-4 py-1.5 text-[10px] font-black uppercase rounded-lg ${streamColors[selectedCollege.stream] || streamColors.general}`}
+                    >
                       {selectedCollege.stream}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-black mb-2">
+                  <h2 className="text-4xl font-black text-[#1e293b] dark:text-white leading-tight mb-2">
                     {selectedCollege.name}
                   </h2>
-                  <p className="opacity-90 text-sm">
+                  <p className="text-gray-400 font-bold uppercase tracking-widest mb-2">
+                    🎓 {selectedCollege.university}
+                  </p>
+                  <p className="text-gray-500 font-bold">
                     📍 {selectedCollege.location.district},{" "}
                     {selectedCollege.location.state}
                   </p>
-                  <p className="opacity-75 text-xs mt-1">
-                    🎓 {selectedCollege.university}
-                  </p>
                 </div>
-                <button
-                  onClick={() => setSelectedCollege(null)}
-                  className="text-2xl font-black hover:opacity-80 transition flex-shrink-0"
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* Modal body */}
-              <div className="p-8">
-                {/* Info cards */}
-                <div className="grid md:grid-cols-3 gap-4 mb-8">
-                  <div className="p-5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                      Type
+                {/* Info Cards Grid */}
+                <div className="grid md:grid-cols-3 gap-4 mb-12">
+                  <div className="p-5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                      College Type
                     </p>
-                    <p className="text-xl font-black text-[#1e4b6e] dark:text-blue-400 capitalize">
+                    <p className="text-lg font-black text-[#1e4b6e] dark:text-blue-400 capitalize">
                       {selectedCollege.type}
                     </p>
                   </div>
-                  <div className="p-5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
+                  <div className="p-5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
                       Stream
                     </p>
-                    <p className="text-xl font-black text-purple-600 dark:text-purple-400 capitalize">
+                    <p className="text-lg font-black text-purple-600 dark:text-purple-400 capitalize">
                       {selectedCollege.stream}
                     </p>
                   </div>
-                  <div className="p-5 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
+                  <div className="p-5 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
                       Total Courses
                     </p>
-                    <p className="text-xl font-black text-[#e67e22]">
+                    <p className="text-lg font-black text-[#e67e22]">
                       {selectedCollege.totalCourses}
                     </p>
                   </div>
                 </div>
-
-                {/* Category & Location */}
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-[#0f172a] border border-gray-200 dark:border-gray-800">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                {/* Location & Category */}
+                <div className="grid md:grid-cols-2 gap-4 mb-12">
+                  <div className="p-5 rounded-2xl bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
                       Category
                     </p>
                     <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
                       {selectedCollege.category || "N/A"}
                     </p>
                   </div>
-                  <div className="p-4 rounded-xl bg-gray-50 dark:bg-[#0f172a] border border-gray-200 dark:border-gray-800">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                      Location
+                  <div className="p-5 rounded-2xl bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2">
+                      Full Address
                     </p>
                     <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                      {selectedCollege.location.address}
+                      {selectedCollege.location.address || "N/A"}
                     </p>
                   </div>
                 </div>
-
-                {/* Courses list */}
+                {/* Courses Section */}
                 <div>
                   <h3 className="text-xl font-black text-[#1e293b] dark:text-white mb-4 flex items-center gap-2">
                     <span className="w-2 h-6 bg-[#e67e22] rounded-full"></span>
@@ -678,7 +675,6 @@ const Colleges = () => {
                     ))}
                   </div>
                 </div>
-
                 {/* Note */}
                 <div className="mt-8 p-4 rounded-xl bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800">
                   <p className="text-xs font-bold text-yellow-700 dark:text-yellow-400">
@@ -687,31 +683,23 @@ const Colleges = () => {
                     the latest offerings.
                   </p>
                 </div>
-
-                {/* Save + Close */}
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={() => toggleSaveCollege(selectedCollege)}
-                    disabled={savingId === selectedCollege._id}
-                    className={`flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all transform active:scale-95 ${
-                      savedCollegeIds.has(selectedCollege._id)
-                        ? "bg-red-500 text-white shadow-lg shadow-red-500/20"
-                        : "bg-green-500 text-white shadow-lg shadow-green-500/20"
-                    } disabled:opacity-50`}
-                  >
-                    {savingId === selectedCollege._id
-                      ? "Saving..."
-                      : savedCollegeIds.has(selectedCollege._id)
-                        ? "♥ Remove from Saved"
-                        : "♡ Save College"}
-                  </button>
-                  <button
-                    onClick={() => setSelectedCollege(null)}
-                    className="flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all transform active:scale-95"
-                  >
-                    Close
-                  </button>
-                </div>
+                {/* Save Button */}
+                <button
+                  onClick={() => toggleSaveCollege(selectedCollege)}
+                  disabled={savingId === selectedCollege._id}
+                  className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs transition-all shadow-xl ${
+                    savedCollegeIds.has(selectedCollege._id)
+                      ? "bg-red-500 text-white shadow-red-500/20"
+                      : "bg-[#e67e22] text-white shadow-orange-500/20"
+                  } disabled:opacity-50 mt-6`}
+                >
+                  {savingId === selectedCollege._id
+                    ? "Saving..."
+                    : savedCollegeIds.has(selectedCollege._id)
+                      ? "♥ Remove from Library"
+                      : "♡ Save to Roadmap"}
+                </button>
+                <div className="h-10" /> {/* Bottom Spacing */}
               </div>
             </motion.div>
           </motion.div>

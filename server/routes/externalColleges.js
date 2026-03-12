@@ -751,4 +751,79 @@ router.post("/search", async (req, res) => {
   }
 });
 
+// ── GET /all-courses  →  All courses from colleges with filters ──────
+router.get("/all-courses", async (req, res) => {
+  try {
+    const { state, district, stream, degree, search, page = 1, limit = 10 } = req.query;
+
+    // Fetch colleges based on filters
+    let colleges = [];
+    if (state && district) {
+      colleges = await getCollegesByDistrict(state, district);
+    } else if (state) {
+      colleges = await getCollegesByState(state);
+    }
+
+    // Map to college objects with courses
+    const collegeData = colleges
+      .map((raw) => mapToCollege(raw))
+      .filter((c) => c !== null);
+
+    // Flatten courses and add college info
+    let allCourses = [];
+    collegeData.forEach((college) => {
+      college.courses.forEach((course) => {
+        allCourses.push({
+          _id: `${college._id}_${course.code}`,
+          ...course,
+          collegeName: college.name,
+          collegeId: college._id,
+          collegeType: college.type,
+          collegeStream: college.stream,
+          location: college.location,
+          university: college.university,
+        });
+      });
+    });
+
+    // Apply filters
+    if (stream) {
+      allCourses = allCourses.filter(
+        (c) => c.stream && c.stream.toLowerCase() === stream.toLowerCase()
+      );
+    }
+    if (degree) {
+      allCourses = allCourses.filter(
+        (c) => c.degree && c.degree.toLowerCase() === degree.toLowerCase()
+      );
+    }
+    if (search) {
+      const searchLower = search.toLowerCase();
+      allCourses = allCourses.filter(
+        (c) =>
+          c.name.toLowerCase().includes(searchLower) ||
+          c.code.toLowerCase().includes(searchLower) ||
+          c.collegeName.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Paginate
+    const { data, pagination } = paginate(allCourses, page, limit);
+
+    res.json({
+      success: true,
+      courses: data,
+      pagination,
+      filters: { state, district, stream, degree, search },
+    });
+  } catch (err) {
+    console.error("GET /all-courses error:", err.message);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching courses",
+      error: err.message,
+    });
+  }
+});
+
 module.exports = router;
