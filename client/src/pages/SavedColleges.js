@@ -14,6 +14,7 @@ const SavedColleges = () => {
   const [removingId, setRemovingId] = useState(null);
   const [selectedCollege, setSelectedCollege] = useState(null);
 
+  // Logic from original code preserved
   useEffect(() => {
     if (!user) return;
     const fetchSaved = async () => {
@@ -45,37 +46,41 @@ const SavedColleges = () => {
   };
 
   const streamColors = {
-    engineering:
-      "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300",
-    medical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-    law: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
-    education:
-      "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300",
-    commerce:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
-    science: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300",
-    arts: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300",
-    general: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+    engineering: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20",
+    medical: "bg-red-50 text-red-600 dark:bg-red-900/20",
+    law: "bg-amber-50 text-amber-600 dark:bg-amber-900/20",
+    education: "bg-teal-50 text-teal-600 dark:bg-teal-900/20",
+    commerce: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20",
+    science: "bg-cyan-50 text-cyan-600 dark:bg-cyan-900/20",
+    arts: "bg-pink-50 text-pink-600 dark:bg-pink-900/20",
+    general: "bg-gray-50 text-gray-600 dark:bg-gray-800",
   };
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-[#0f172a]">
-        <div className="text-center p-12 rounded-3xl bg-white dark:bg-[#1e293b] shadow-2xl max-w-md">
-          <p className="text-6xl mb-6">🔒</p>
-          <h2 className="text-2xl font-black text-[#1e293b] dark:text-white mb-4">
-            Login Required
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-[#0f172a] px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center p-12 rounded-[3rem] bg-white dark:bg-[#1e293b] shadow-2xl max-w-md border border-gray-100 dark:border-gray-800"
+        >
+          <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+            🔒
+          </div>
+          <h2 className="text-3xl font-black text-[#1e293b] dark:text-white mb-4">
+            Authentication Required
           </h2>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
-            Please login to view your saved colleges.
+          <p className="text-gray-500 dark:text-gray-400 mb-8 font-medium">
+            Join the community to start building your personalized college
+            library.
           </p>
           <button
             onClick={() => navigate("/login")}
-            className="px-8 py-3 rounded-xl bg-[#e67e22] text-white font-black text-sm uppercase tracking-widest hover:bg-[#d35400] transition-all"
+            className="w-full py-4 rounded-2xl bg-[#e67e22] text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-orange-500/20 hover:scale-[1.02] transition-all"
           >
-            Login
+            Sign In Now
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -84,12 +89,12 @@ const SavedColleges = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-[#0f172a]">
         <div className="text-center">
-          <div className="relative inline-flex">
+          <div className="relative inline-flex mb-4">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#bae6fd] dark:border-gray-800" />
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-[#e67e22] absolute top-0 left-0" />
           </div>
-          <p className="mt-6 text-gray-500 dark:text-gray-400 font-bold animate-pulse uppercase tracking-widest text-xs">
-            Loading Saved Colleges...
+          <p className="text-gray-500 font-black uppercase tracking-widest text-[10px]">
+            Accessing Your Vault...
           </p>
         </div>
       </div>
@@ -97,39 +102,34 @@ const SavedColleges = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] transition-colors duration-500 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#3498db]/5 dark:bg-[#3498db]/10 rounded-full blur-[120px] -z-10" />
-      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#e67e22]/5 rounded-full blur-[120px] -z-10" />
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a] transition-all duration-500 relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#3498db]/5 rounded-full blur-[120px] -z-0" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#e67e22]/5 rounded-full blur-[120px] -z-0" />
 
       <div className="max-w-7xl mx-auto px-6 py-12 relative z-10">
         {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-5xl font-black text-[#1e293b] dark:text-white mb-4 tracking-tight">
-            Saved <span className="text-[#e67e22]">Colleges</span>
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 max-w-2xl mx-auto text-lg font-medium">
-            Your bookmarked colleges — saved for quick reference.
-          </p>
-        </div>
-
-        {/* Stats banner */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 border border-blue-200 dark:border-blue-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                Your Collection
-              </p>
-              <h2 className="text-2xl font-black text-[#1e293b] dark:text-white">
-                {user?.name}'s Saved Colleges
-              </h2>
-            </div>
+        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-5xl font-black text-[#1e293b] dark:text-white mb-4 tracking-tight">
+              Your <span className="text-[#e67e22]">Library</span>
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 max-w-xl text-lg font-medium">
+              Manage and explore the institutions you've shortlisted for your
+              future.
+            </p>
+          </div>
+          <div className="bg-white dark:bg-[#1e293b] px-8 py-4 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl flex items-center gap-4">
             <div className="text-right">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                Total Saved
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#3498db]">
+                Shortlisted
               </p>
-              <p className="text-3xl font-black text-[#e67e22]">
+              <p className="text-3xl font-black text-[#1e293b] dark:text-white">
                 {colleges.length}
               </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center text-xl">
+              ⭐
             </div>
           </div>
         </div>
@@ -140,26 +140,27 @@ const SavedColleges = () => {
             {colleges.map((college, index) => (
               <motion.div
                 key={college._id + index}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.04 }}
-                className="group relative p-8 rounded-[2rem] bg-white dark:bg-[#1e293b] shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 dark:border-gray-800 hover:border-[#e67e22]/30"
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="group relative p-8 rounded-[3rem] bg-white dark:bg-[#1e293b] shadow-xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] transition-all duration-500 border border-transparent hover:border-[#bae6fd]/50"
               >
-                {/* Saved date badge */}
-                <div className="absolute top-4 right-4">
-                  <span className="px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[9px] font-black uppercase tracking-widest rounded-lg">
-                    ♥ Saved{" "}
+                {/* Save date badge */}
+                <div className="absolute top-6 right-8">
+                  <div className="px-4 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-emerald-100 dark:border-emerald-800 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    Saved{" "}
                     {college.savedAt
-                      ? new Date(college.savedAt).toLocaleDateString()
-                      : ""}
-                  </span>
+                      ? new Date(college.savedAt).toLocaleDateString("en-GB")
+                      : "Recently"}
+                  </div>
                 </div>
 
-                {/* Header */}
-                <div className="flex justify-between items-start mb-4 pr-24">
+                <div className="flex justify-between items-start mb-6 pr-24">
                   <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-[#3498db] text-[9px] font-black uppercase tracking-widest rounded-lg">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                      <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-[#3498db] text-[9px] font-black uppercase rounded-lg tracking-widest">
                         {college.type}
                       </span>
                       <span
@@ -168,7 +169,7 @@ const SavedColleges = () => {
                         {college.stream}
                       </span>
                     </div>
-                    <h3 className="text-lg font-black text-[#1e293b] dark:text-white group-hover:text-[#e67e22] transition-colors line-clamp-2">
+                    <h3 className="text-2xl font-black text-[#1e293b] dark:text-white group-hover:text-[#e67e22] transition-colors leading-tight">
                       {college.name}
                     </h3>
                     <p className="text-gray-400 font-bold text-xs uppercase tracking-widest flex items-center gap-1 mt-1">
@@ -177,77 +178,79 @@ const SavedColleges = () => {
                   </div>
                 </div>
 
-                {/* University */}
-                <div className="mb-4 p-3 rounded-lg bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
-                    University
+                <div className="mb-6 p-4 rounded-2xl bg-gray-50 dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                    Affiliation
                   </p>
-                  <p className="text-sm font-bold text-gray-700 dark:text-gray-300 line-clamp-1">
+                  <p className="text-sm font-bold text-[#1e293b] dark:text-gray-300 line-clamp-1">
                     {college.university}
                   </p>
                 </div>
 
-                {/* Courses */}
-                <div className="mb-4">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                    Courses ({college.totalCourses})
+                <div className="mb-8">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">
+                    Top Programs
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {college.courses?.slice(0, 4).map((c, i) => (
                       <span
                         key={i}
-                        className="px-3 py-1.5 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-100 dark:border-blue-800 text-gray-700 dark:text-gray-300 text-[11px] font-bold rounded-lg"
+                        className="px-3 py-1.5 bg-white dark:bg-[#1e293b] border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded-lg"
                       >
                         {c.code}
                       </span>
                     ))}
                     {college.totalCourses > 4 && (
-                      <span className="px-3 py-1.5 bg-gray-50 dark:bg-[#0f172a] text-[#3498db] text-[11px] font-bold rounded-lg italic">
+                      <span className="text-[10px] font-black text-[#3498db] pt-1">
                         +{college.totalCourses - 4} more
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex gap-3 pt-6 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
                   <button
                     onClick={() => setSelectedCollege(college)}
-                    className="flex-1 px-4 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest border-2 border-gray-100 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-[#e67e22] hover:text-white hover:border-[#e67e22] transition-all"
+                    className="flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest bg-[#1e293b] text-white hover:bg-[#3498db] transition-all active:scale-95 shadow-lg"
                   >
-                    View Details
+                    Full Details
                   </button>
                   <button
                     onClick={() => removeCollege(college._id)}
                     disabled={removingId === college._id}
-                    className="px-4 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest border-2 border-red-200 dark:border-red-800 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all disabled:opacity-50"
+                    className="px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest border-2 border-red-100 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 transition-all disabled:opacity-50"
                   >
-                    {removingId === college._id ? "Removing..." : "✕ Remove"}
+                    {removingId === college._id ? "..." : "Remove"}
                   </button>
                 </div>
               </motion.div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 bg-white dark:bg-[#1e293b] rounded-[2rem] shadow-lg">
-            <p className="text-6xl mb-4">📚</p>
-            <p className="text-gray-400 font-black uppercase tracking-widest mb-4">
-              No saved colleges yet
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              Browse colleges and click the save button to add them here.
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-32 bg-white dark:bg-[#1e293b] rounded-[4rem] shadow-xl border border-gray-100 dark:border-gray-800"
+          >
+            <div className="text-6xl mb-6">📂</div>
+            <h3 className="text-2xl font-black text-[#1e293b] dark:text-white mb-2">
+              No shortlists yet
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-10 font-medium">
+              Explore our vast directory of colleges and save them to compare
+              later.
             </p>
             <button
               onClick={() => navigate("/colleges")}
-              className="px-8 py-3 rounded-xl bg-[#e67e22] text-white font-black text-sm uppercase tracking-widest hover:bg-[#d35400] transition-all"
+              className="px-12 py-5 rounded-[2rem] bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white font-black uppercase tracking-widest text-xs shadow-2xl active:scale-95 transition-all"
             >
-              Browse Colleges
+              Discover Colleges
             </button>
-          </div>
+          </motion.div>
         )}
       </div>
 
-      {/* Detail Modal */}
+      {/* --- SCROLLING MODAL FIX --- */}
       <AnimatePresence>
         {selectedCollege && (
           <motion.div
@@ -255,19 +258,19 @@ const SavedColleges = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSelectedCollege(null)}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-[#0f172a]/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 md:p-6"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-[#1e293b] rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-white dark:bg-[#1e293b] rounded-[3rem] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-white/10 overflow-hidden"
             >
-              {/* Modal header */}
-              <div className="sticky top-0 bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white p-8 rounded-t-3xl flex justify-between items-start z-10">
-                <div className="flex-1 pr-4">
-                  <div className="flex items-center gap-2 mb-2">
+              {/* FIXED HEADER */}
+              <div className="bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white p-8 md:p-10 flex justify-between items-start shrink-0">
+                <div className="flex-1 pr-6">
+                  <div className="flex gap-2 mb-3">
                     <span className="px-3 py-1 bg-white/20 text-[9px] font-black uppercase tracking-widest rounded-lg">
                       {selectedCollege.type}
                     </span>
@@ -275,105 +278,95 @@ const SavedColleges = () => {
                       {selectedCollege.stream}
                     </span>
                   </div>
-                  <h2 className="text-2xl font-black mb-2">
+                  <h2 className="text-3xl font-black mb-1">
                     {selectedCollege.name}
                   </h2>
-                  <p className="opacity-90 text-sm">
+                  <p className="opacity-90 text-sm font-medium">
                     📍 {selectedCollege.location?.district},{" "}
                     {selectedCollege.location?.state}
-                  </p>
-                  <p className="opacity-75 text-xs mt-1">
-                    🎓 {selectedCollege.university}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedCollege(null)}
-                  className="text-2xl font-black hover:opacity-80 transition flex-shrink-0"
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/10 hover:bg-white/20 transition-all font-black"
                 >
                   ✕
                 </button>
               </div>
 
-              {/* Modal body */}
-              <div className="p-8">
-                <div className="grid md:grid-cols-3 gap-4 mb-8">
-                  <div className="p-5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                      Type
+              {/* SCROLLABLE BODY */}
+              <div className="flex-1 overflow-y-auto p-10 space-y-10 bg-[#fdfdfd] dark:bg-[#1e293b] custom-scrollbar">
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="p-6 rounded-[2rem] bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-center">
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                      Programs
                     </p>
-                    <p className="text-xl font-black text-[#1e4b6e] dark:text-blue-400 capitalize">
-                      {selectedCollege.type}
-                    </p>
-                  </div>
-                  <div className="p-5 rounded-2xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                      Stream
-                    </p>
-                    <p className="text-xl font-black text-purple-600 dark:text-purple-400 capitalize">
-                      {selectedCollege.stream}
-                    </p>
-                  </div>
-                  <div className="p-5 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
-                    <p className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
-                      Total Courses
-                    </p>
-                    <p className="text-xl font-black text-[#e67e22]">
+                    <p className="text-2xl font-black text-[#1e4b6e] dark:text-blue-300">
                       {selectedCollege.totalCourses}
+                    </p>
+                  </div>
+                  <div className="p-6 rounded-[2rem] bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-800 text-center">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-1">
+                      Rating
+                    </p>
+                    <p className="text-2xl font-black text-[#e67e22]">4.2 ★</p>
+                  </div>
+                  <div className="p-6 rounded-[2rem] bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800 text-center">
+                    <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-1">
+                      Region
+                    </p>
+                    <p className="text-xl font-black text-purple-600 dark:text-purple-300 capitalize">
+                      {selectedCollege.location?.district}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-xl font-black text-[#1e293b] dark:text-white mb-4 flex items-center gap-2">
-                    <span className="w-2 h-6 bg-[#e67e22] rounded-full"></span>
-                    Available Courses ({selectedCollege.totalCourses})
+                  <h3 className="text-xl font-black text-[#1e293b] dark:text-white mb-6 flex items-center gap-3">
+                    <span className="w-2 h-6 bg-[#e67e22] rounded-full" />{" "}
+                    Detailed Course List
                   </h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     {selectedCollege.courses?.map((course, idx) => (
                       <div
                         key={idx}
-                        className="p-5 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-100 dark:border-blue-800 hover:shadow-md transition-shadow"
+                        className="p-6 rounded-3xl bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 shadow-sm group/item"
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <p className="font-black text-[#1e4b6e] dark:text-blue-400 text-sm">
-                            {course.name}
-                          </p>
-                          <span className="text-[9px] font-black uppercase px-2 py-1 bg-white dark:bg-[#0f172a] rounded-lg text-gray-500 flex-shrink-0 ml-2">
-                            {course.code}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-[10px] font-bold text-gray-500 dark:text-gray-400">
-                          <span>📚 {course.stream}</span>
-                          <span>🎓 {course.degree}</span>
+                        <p className="font-black text-[#1e4b6e] dark:text-blue-400 text-base mb-3 leading-tight">
+                          {course.name}
+                        </p>
+                        <div className="flex flex-wrap gap-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                           <span>⏱️ {course.duration}</span>
-                          {course.fees && (
-                            <span className="text-green-600 dark:text-green-400 font-black">
-                              ₹{course.fees.toLocaleString()}/yr
-                            </span>
-                          )}
+                          <span>🎓 {course.degree}</span>
+                          <span className="text-emerald-500 font-black">
+                            ₹{course.fees?.toLocaleString()}/yr
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="mt-6 flex gap-3">
-                  <button
-                    onClick={() => removeCollege(selectedCollege._id)}
-                    disabled={removingId === selectedCollege._id}
-                    className="flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest bg-red-500 text-white shadow-lg shadow-red-500/20 hover:bg-red-600 transition-all disabled:opacity-50"
-                  >
-                    {removingId === selectedCollege._id
-                      ? "Removing..."
-                      : "✕ Remove from Saved"}
-                  </button>
-                  <button
-                    onClick={() => setSelectedCollege(null)}
-                    className="flex-1 px-6 py-4 rounded-xl font-black text-[11px] uppercase tracking-widest bg-gradient-to-r from-[#1e4b6e] to-[#3498db] text-white shadow-lg shadow-blue-500/20 transition-all"
-                  >
-                    Close
-                  </button>
-                </div>
+                <div className="h-4" />
+              </div>
+
+              {/* FIXED FOOTER */}
+              <div className="p-8 bg-gray-50 dark:bg-[#0f172a] border-t border-gray-100 dark:border-gray-800 flex gap-4 shrink-0">
+                <button
+                  onClick={() => removeCollege(selectedCollege._id)}
+                  disabled={removingId === selectedCollege._id}
+                  className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                >
+                  {removingId === selectedCollege._id
+                    ? "Removing..."
+                    : "Remove Shortlist"}
+                </button>
+                <button
+                  onClick={() => setSelectedCollege(null)}
+                  className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-[#1e293b] dark:bg-gray-800 text-white active:scale-95 transition-all"
+                >
+                  Return to Library
+                </button>
               </div>
             </motion.div>
           </motion.div>
