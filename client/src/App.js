@@ -17,6 +17,7 @@ import PsychometricTest from "./pages/PsychometricTest";
 import CareerResults from "./pages/CareerResults";
 import Colleges from "./pages/Colleges";
 import Courses from "./pages/Courses";
+import AIAdviser from "./pages/AIAdviser";
 import SavedColleges from "./pages/SavedColleges";
 import SavedCourses from "./pages/SavedCourses";
 import Profile from "./pages/Profile";
@@ -88,6 +89,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Courses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ai-adviser"
+          element={
+            <ProtectedRoute>
+              <AIAdviser />
             </ProtectedRoute>
           }
         />

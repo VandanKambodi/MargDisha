@@ -10,6 +10,7 @@ const quizRoutes = require("./routes/quiz");
 const streamQuizRoutes = require("./routes/streamQuiz");
 const externalCollegesRoutes = require("./routes/externalColleges");
 const savedRoutes = require("./routes/saved");
+const aiAdviserRoutes = require("./routes/aiAdviser");
 
 // Import all models to register them with Mongoose
 require("./models/User");
@@ -36,6 +37,8 @@ app.use("/api/stream-quiz", streamQuizRoutes);
 app.use("/api/external-colleges", externalCollegesRoutes);
 // Saved colleges & courses – per user, stored in DB
 app.use("/api/saved", savedRoutes);
+// AI Personal Adviser Chatbot
+app.use("/api/ai-adviser", aiAdviserRoutes);
 
 // MongoDB connection
 mongoose
