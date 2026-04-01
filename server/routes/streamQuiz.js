@@ -2,6 +2,12 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const Question = require('../models/Question');
 const User = require('../models/User');
+const Profile = require('../models/Profile');
+const Groq = require("groq-sdk");
+const crypto = require("crypto");
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" });
+const MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
 
 const router = express.Router();
 
@@ -56,74 +62,106 @@ router.get('/random', async (req, res) => {
         }).filter(id => id !== null);
         
         console.log('Anonymous user - excluding', excludeQuestionIds.length, 'previously used questions');
-        console.log('Sample excluded IDs:', excludeQuestionIds.slice(0, 3));
       } catch (parseError) {
         console.log('Error parsing excludeIds:', parseError.message);
-        console.log('Raw excludeIds that failed:', excludeIds);
         excludeQuestionIds = [];
       }
-    } else {
-      console.log('No userId or excludeIds provided, using random questions');
     }
 
-    for (const stream of streams) {
-      // Build match query to exclude recently used questions
-      const matchQuery = { 
-        stream: stream, 
-        isActive: true 
-      };
-      
-      if (excludeQuestionIds.length > 0) {
-        matchQuery._id = { $nin: excludeQuestionIds };
+    // Try to get user profile for dynamic questions
+    let profileStr = "";
+    if (userId) {
+      const profile = await Profile.findOne({ userId });
+      if (profile && profile.careerPreferences && profile.careerPreferences.interests) {
+        profileStr = profile.careerPreferences.interests.join(", ");
       }
+    }
 
-      console.log(`Processing ${stream} stream:`, {
-        excludeCount: excludeQuestionIds.length,
-        hasExclusions: excludeQuestionIds.length > 0
-      });
+    const systemPrompt = `You are a Career Assessment Quiz Generator.
+Your task is to generate Exactly 20 unique multiple-choice questions (5 for 'science', 5 for 'commerce', 5 for 'arts', and 5 for 'diploma').
+The student's personal interests are: ${profileStr || "general subjects"}. Please try to flavor or theme some questions around these interests, but ensure they accurately test the aptitude for the respective stream.
 
-      // Get available questions count
-      const totalStreamQuestions = await Question.countDocuments({ stream: stream, isActive: true });
-      const availableCount = await Question.countDocuments(matchQuery);
-      
-      console.log(`${stream}: Total=${totalStreamQuestions}, Available after exclusions=${availableCount}`);
-      
-      // If not enough unique questions available, include some recent ones
-      let questionsToFetch = questionsPerStream;
-      if (availableCount < questionsPerStream) {
-        console.log(`Not enough unique ${stream} questions. Available: ${availableCount}, Needed: ${questionsPerStream}`);
-        // Fallback to all available questions for this stream
-        matchQuery._id = undefined;
-        questionsToFetch = Math.min(questionsPerStream, totalStreamQuestions);
+Return ONLY a valid JSON object matching this schema exactly:
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": [
+        { "text": "Option A text", "value": "A", "isCorrect": true },
+        { "text": "Option C text", "value": "C", "isCorrect": false }
+      ],
+      "stream": "science" 
+    }
+  ]
+}
+Each question MUST have 4 options. Only ONE option should be marked with "isCorrect": true.
+Do NOT use Markdown formatting (like \`\`\`json) in your answer. Output purely the JSON array inside the main object.`;
+
+    let generatedQuestions = [];
+    
+    // Try to generate dynamic questions first
+    for (const modelName of MODELS) {
+      try {
+        console.log(`Attempting to generate dynamic questions via ${modelName}...`);
+        const completion = await groq.chat.completions.create({
+          messages: [{ role: "system", content: systemPrompt }],
+          model: modelName,
+          temperature: 0.7,
+          max_tokens: 3000,
+          response_format: { type: "json_object" }
+        });
+        
+        const rawJson = completion.choices[0]?.message?.content || "{}";
+        const parsed = JSON.parse(rawJson);
+        if (parsed.questions && parsed.questions.length > 0) {
+          // Add custom _ids
+          generatedQuestions = parsed.questions.map(q => ({
+            _id: crypto.randomBytes(12).toString('hex'), // Fake ObjectId
+            question: q.question,
+            options: q.options.map(opt => ({
+              text: opt.text,
+              value: crypto.randomBytes(12).toString('hex'), // unique option value
+              isCorrect: opt.isCorrect
+            })),
+            stream: q.stream.toLowerCase(),
+            category: "Dynamic",
+            difficulty: "Medium"
+          }));
+          break; // Success
+        }
+      } catch (err) {
+        console.warn(`Dynamic question generation failed for ${modelName}:`, err.message);
       }
+    }
 
-      // Get random questions for each stream
-      const questions = await Question.aggregate([
-        { $match: matchQuery },
-        { $sample: { size: questionsToFetch } },
-        { $project: { 
-          _id: 1,
-          question: 1,
-          options: { $map: {
-            input: "$options",
-            as: "option",
-            in: {
-              text: "$$option.text",
-              value: { $toString: "$$option._id" },
-              isCorrect: "$$option.isCorrect"
-            }
-          }},
-          stream: 1,
-          category: 1,
-          difficulty: 1
-        }}
-      ]);
-
-      console.log(`Selected ${questions.length} ${stream} questions:`, 
-        questions.map(q => ({ id: q._id, question: q.question.substring(0, 50) + '...' }))
-      );
-
-      allQuestions.push(...questions);
+    // If generation succeeds, use dynamic questions. Otherwise fallback to database DB.
+    if (generatedQuestions.length >= 10) {
+      allQuestions.push(...generatedQuestions);
+      console.log(`✅ Using ${allQuestions.length} AI-generated dynamic questions based on profile.`);
+    } else {
+      console.log('⚠️ AI generation failed. Falling back to DB questions.');
+      for (const stream of streams) {
+        const matchQuery = { stream: stream, isActive: true };
+        const questions = await Question.aggregate([
+          { $match: matchQuery },
+          { $sample: { size: questionsPerStream } },
+          { $project: { 
+            _id: 1,
+            question: 1,
+            options: { $map: {
+              input: "$options",
+              as: "option",
+              in: {
+                text: "$$option.text",
+                value: { $toString: "$$option._id" },
+                isCorrect: "$$option.isCorrect"
+              }
+            }},
+            stream: 1
+          }}
+        ]);
+        allQuestions.push(...questions);
+      }
     }
 
     // Shuffle all questions
@@ -132,18 +170,11 @@ router.get('/random', async (req, res) => {
       [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
     }
 
-    console.log('Final response:', {
-      totalQuestions: allQuestions.length,
-      excludedCount: excludeQuestionIds.length,
-      questionIds: allQuestions.map(q => q._id)
-    });
-
     res.json({
       questions: allQuestions,
       totalQuestions: allQuestions.length,
       questionsPerStream: questionsPerStream,
-      excludedCount: excludeQuestionIds.length,
-      isUniqueSet: excludeQuestionIds.length > 0
+      isUniqueSet: true
     });
   } catch (error) {
     console.error('Get random quiz error:', error);
@@ -219,7 +250,11 @@ router.post('/submit', auth, async (req, res) => {
 
     // Calculate scores for each answer
     for (const answer of answers) {
-      const question = await Question.findById(answer.questionId);
+      if (!answer.questionId) continue;
+      // Skip DB check if question ID is not a valid 24-char Mongo ID
+      if (answer.questionId.length !== 24) continue;
+      
+      const question = await Question.findById(answer.questionId).catch(() => null);
       if (!question) continue;
 
       totalQuestions++;
@@ -234,6 +269,16 @@ router.post('/submit', auth, async (req, res) => {
         // Give points to the stream this question belongs to
         streamScores[question.stream] += 1;
       }
+    }
+
+    // If no DB hits happened (because all questions were generated by Groq)
+    // Use the results computed locally on the client!
+    if (totalQuestions === 0 && req.body.results) {
+       console.log("Using client-side results for AI-generated dynamic quiz.");
+       const resData = req.body.results;
+       totalQuestions = resData.totalQuestions || answers.length;
+       correctAnswers = resData.correctAnswers || 0;
+       Object.assign(streamScores, resData.streamCorrectAnswers || { science: 0, commerce: 0, arts: 0, diploma: 0 });
     }
 
     // Calculate percentages

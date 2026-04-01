@@ -12,6 +12,10 @@ const authMiddleware = require("../middleware/auth");
 const User = require("../models/User");
 const Profile = require("../models/Profile");
 const Course = require("../models/Course");
+const Groq = require("groq-sdk");
+
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || "missing" });
+const MODELS = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"];
 
 const API_BASE = "https://colleges-api-india.fly.dev";
 const TIMEOUT = 15000;
@@ -104,7 +108,8 @@ router.post("/chat", authMiddleware, async (req, res) => {
     }
 
     // Parse user message and get response
-    const response = await generateAdviserResponse(message, userProfile);
+    const history = req.body.history || [];
+    const response = await generateAdviserResponse(message, userProfile, history);
 
     console.log(`✅ Chat response generated for message: "${message}"`);
 
@@ -192,404 +197,77 @@ router.post("/personalized-data", authMiddleware, async (req, res) => {
   }
 });
 
-async function generateAdviserResponse(userMessage, userProfile) {
-  const messageLower = userMessage.toLowerCase();
+async function generateAdviserResponse(userMessage, userProfile, history = []) {
+  try {
+    const systemPrompt = `You are a ChatGPT-like highly intelligent, empathetic Career Adviser for MargDisha.
+Your primary role is to provide expert career, college, and course advice based on the student's profile.
 
-  // Greeting responses
-  if (
-    messageLower.match(
-      /hi|hello|hey|greetings|namaste|start|how\s+are|good\s+morning|good\s+afternoon/i
-    )
-  ) {
+Student Profile:
+- Class: ${userProfile.class}
+- Stream: ${userProfile.stream}
+- Core Interests: ${userProfile.interests.join(", ") || "Not specified"}
+- Academic Percentage/Grade: ${userProfile.percentage || "Not provided"}
+- Location: ${userProfile.city}, ${userProfile.district}, ${userProfile.state}
+
+Guidelines:
+1. ALWAYS respond in valid JSON format ONLY. 
+2. The JSON structure MUST be strictly:
+{
+  "type": "advice",
+  "text": "Your markdown-formatted conversational response here...",
+  "suggestions": ["3 short follow-up questions the user can ask"]
+}
+3. Your advice must be personalized using their profile data. Be encouraging. Do not hallucinate real-time data unless confident.
+4. "text" supports Markdown. Structure your reply nicely with bullet points, bolding, or headings if applicable.
+
+You are interacting directly with the student. Be conversational, insightful, and knowledgeable.`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.map(msg => ({ role: msg.role === "user" ? "user" : "assistant", content: msg.content })),
+      { role: "user", content: userMessage }
+    ];
+
+    let botReply = null;
+    let fallbackHit = false;
+
+    // Retry logic across models for structured JSON
+    for (const modelName of MODELS) {
+      try {
+        const completion = await groq.chat.completions.create({
+          messages: messages,
+          model: modelName,
+          temperature: 0.7,
+          max_tokens: 1024,
+          response_format: { type: "json_object" }
+        });
+
+        const rawResponse = completion.choices[0]?.message?.content || "";
+        botReply = JSON.parse(rawResponse);
+        break; // Stop at first successful model
+      } catch (e) {
+        console.warn(`Groq Model ${modelName} attempt failed: ${e.message}`);
+        fallbackHit = true;
+      }
+    }
+
+    if (!botReply) {
+      throw new Error("All Groq models failed to respond.");
+    }
+
     return {
-      type: "greeting",
-      text: `👋 Hello! I'm your **Personal Career Adviser**. I'm here to help you find the best colleges and courses in **${userProfile.state}** based on your profile.\n\n📍 **Your Profile Summary:**\n- Class: ${capitalizeCase(userProfile.class)}\n- Stream: ${capitalizeCase(userProfile.stream) || "Not specified"}\n- Location: ${userProfile.city}, ${userProfile.district}, ${userProfile.state}\n\nYou can ask me about:\n✓ Government & Private colleges in your area\n✓ Courses available in your location\n✓ Which college is best for you\n✓ Course details and fees\n✓ Career guidance based on your stream\n\n**What would you like to know?**`,
-      suggestions: [
-        "Show me government colleges",
-        "What are the private colleges?",
-        "Which courses are available?",
-        "Recommend colleges for my stream",
-      ],
+      type: botReply.type || "advice",
+      text: botReply.text || "I'm still learning, but I'm here to help you navigate your career path!",
+      suggestions: Array.isArray(botReply.suggestions) ? botReply.suggestions : []
+    };
+  } catch (error) {
+    console.error("AI Adviser Generation Error:", error);
+    return {
+      type: "error",
+      text: "❌ Unable to connect to the intelligence system. I am really sorry, but I am currently offline. Please try again later.",
+      suggestions: ["Try asking again", "Look up colleges"]
     };
   }
-
-  // Government colleges query
-  if (messageLower.match(/government|government\s+colleges|govt|state\s+college/i)) {
-    try {
-      const colleges = await fetchCollegesByType(
-        userProfile.state,
-        userProfile.district,
-        "government"
-      );
-
-      if (colleges.length === 0) {
-        return {
-          type: "colleges",
-          text: `❌ No government colleges found in **${userProfile.city}, ${userProfile.district}** currently.\n\nWould you like me to show you **private colleges** instead? Private institutions also offer excellent quality education.`,
-          suggestions: [
-            "Show private colleges",
-            "Colleges nearby",
-            "About courses",
-          ],
-        };
-      }
-
-      let collegeList = `🏛️ **Government Colleges in ${userProfile.city}, ${userProfile.district}, ${userProfile.state}**\n\n`;
-      collegeList += `📊 **Total Found: ${colleges.length} Colleges**\n\n`;
-
-      colleges.slice(0, 5).forEach((college, idx) => {
-        collegeList += `**${idx + 1}. ${college.name || "College"}**\n`;
-        collegeList += `   📍 Address: ${college.address || college.city}\n`;
-        collegeList += `   🎓 Type: ${capitalizeCase(college.type || "Government")}\n`;
-        
-        // Show establishment year
-        if (college.established && college.established !== "N/A") {
-          collegeList += `   📅 Established: ${college.established}\n`;
-        }
-        
-        // Show streams offered
-        if (college.stream && college.stream.length > 0) {
-          collegeList += `   📚 Streams: ${college.stream.join(", ")}\n`;
-        }
-        
-        // Show NIRF ranking if available
-        if (college.ranking || college.nirf_ranking) {
-          collegeList += `   🏆 Ranking: ${college.ranking || college.nirf_ranking}\n`;
-        }
-        
-        // Show accreditation
-        if (college.accreditation) {
-          collegeList += `   ✅ Accreditation: ${college.accreditation}\n`;
-        }
-        
-        // Show available seats if available  
-        if (college.seats) {
-          collegeList += `   🎯 Total Seats: ${college.seats}\n`;
-        }
-        
-        // Show cutoff score if available
-        if (college.cutoff) {
-          collegeList += `   📊 Cutoff Score: ${college.cutoff}\n`;
-        }
-        
-        // Show facilities
-        const facilities = [];
-        if (college.hostels) facilities.push("Hostel");
-        if (college.library) facilities.push("Library");
-        if (college.sports) facilities.push("Sports");
-        if (college.lab) facilities.push("Labs");
-        if (facilities.length > 0) {
-          collegeList += `   🏢 Facilities: ${facilities.join(", ")}\n`;
-        }
-        
-        collegeList += `\n`;
-      });
-
-      if (colleges.length > 5) {
-        collegeList += `\n... and **${colleges.length - 5} more** government colleges in your area.\n`;
-      }
-
-      collegeList += `\n✅ **What would you like to do next?**\n- Learn about available courses\n- Compare with private colleges\n- Get career recommendations`;
-
-      return {
-        type: "colleges",
-        text: collegeList,
-        suggestions: [
-          "Tell me about courses",
-          "Show private colleges",
-          "Recommend best college",
-        ],
-        data: colleges,
-      };
-    } catch (error) {
-      console.error("Error in government colleges:", error);
-      return {
-        type: "error",
-        text: `❌ Error fetching government colleges. Please try again in a moment.`,
-        suggestions: ["Try again", "Show private colleges", "Ask another question"],
-      };
-    }
-  }
-
-  // Private colleges query
-  if (messageLower.match(/private|private\s+colleges|non-government|independent/i)) {
-    try {
-      const colleges = await fetchCollegesByType(
-        userProfile.state,
-        userProfile.district,
-        "private"
-      );
-
-      if (colleges.length === 0) {
-        return {
-          type: "colleges",
-          text: `❌ No private colleges found in **${userProfile.city}, ${userProfile.district}** currently.\n\nWould you like me to show you **government colleges** instead?`,
-          suggestions: [
-            "Show government colleges",
-            "Colleges in nearby areas",
-            "Available courses",
-          ],
-        };
-      }
-
-      let collegeList = `🏢 **Private Colleges in ${userProfile.city}, ${userProfile.district}, ${userProfile.state}**\n\n`;
-      collegeList += `📊 **Total Found: ${colleges.length} Colleges**\n\n`;
-
-      colleges.slice(0, 5).forEach((college, idx) => {
-        collegeList += `**${idx + 1}. ${college.name || "College"}**\n`;
-        collegeList += `   📍 Address: ${college.address || college.city}\n`;
-        collegeList += `   🎓 Type: ${capitalizeCase(college.type || "Private")}\n`;
-        
-        // Show establishment year
-        if (college.established && college.established !== "N/A") {
-          collegeList += `   📅 Established: ${college.established}\n`;
-        }
-        
-        // Show streams offered
-        if (college.stream && college.stream.length > 0) {
-          collegeList += `   📚 Streams: ${college.stream.join(", ")}\n`;
-        }
-        
-        // Show NIRF ranking if available
-        if (college.ranking || college.nirf_ranking) {
-          collegeList += `   🏆 Ranking: ${college.ranking || college.nirf_ranking}\n`;
-        }
-        
-        // Show accreditation
-        if (college.accreditation) {
-          collegeList += `   ✅ Accreditation: ${college.accreditation}\n`;
-        }
-        
-        // Show available seats if available
-        if (college.seats) {
-          collegeList += `   🎯 Total Seats: ${college.seats}\n`;
-        }
-        
-        // Show cutoff score if available
-        if (college.cutoff) {
-          collegeList += `   📊 Cutoff Score: ${college.cutoff}\n`;
-        }
-        
-        // Show facilities
-        const facilities = [];
-        if (college.hostels) facilities.push("Hostel");
-        if (college.library) facilities.push("Library");
-        if (college.sports) facilities.push("Sports");
-        if (college.lab) facilities.push("Labs");
-        if (facilities.length > 0) {
-          collegeList += `   🏢 Facilities: ${facilities.join(", ")}\n`;
-        }
-        
-        collegeList += `\n`;
-      });
-
-      if (colleges.length > 5) {
-        collegeList += `\n... and **${colleges.length - 5} more** private colleges in your area.\n`;
-      }
-
-      collegeList += `\n✅ **What would you like to do next?**\n- Learn about available courses\n- Compare with government colleges\n- Get career recommendations`;
-
-      return {
-        type: "colleges",
-        text: collegeList,
-        suggestions: [
-          "Tell me about courses",
-          "Show government colleges",
-          "Career recommendations",
-        ],
-        data: colleges,
-      };
-    } catch (error) {
-      console.error("Error in private colleges:", error);
-      return {
-        type: "error",
-        text: `❌ Error fetching private colleges. Please try again in a moment.`,
-        suggestions: ["Try again", "Show government colleges", "Ask another question"],
-      };
-    }
-  }
-
-  // Courses query
-  if (messageLower.match(/courses|what\s+courses|course\s+details|available\s+courses|course\s+options/i)) {
-    try {
-      const courses = await getCoursesByStream(userProfile.stream || "science");
-      
-      if (courses.length === 0) {
-        return {
-          type: "error",
-          text: `📚 **No Courses Available**\n\n❌ Currently, there are no courses configured in the system for the **${capitalizeCase(userProfile.stream)}** stream.\n\n**Please contact the administrator to seed the course database** with courses for your stream.\n\n**In the meantime, you can:**\n✓ Browse available colleges in your area\n✓ Get personalized college recommendations\n✓ Explore career guidance information`,
-          suggestions: [
-            "Show me colleges",
-            "Career recommendations",
-            "Ask something else",
-          ],
-        };
-      }
-
-      let courseList = `📚 **Available Courses - ${capitalizeCase(userProfile.stream)} Stream**\n`;
-      courseList += `📍 Location: ${userProfile.city}, ${userProfile.district}, ${userProfile.state}\n\n`;
-      courseList += `**Total Courses Available: ${courses.length}**\n\n`;
-
-      courses.slice(0, 8).forEach((course, idx) => {
-        courseList += `**${idx + 1}. ${course.name}**\n`;
-        courseList += `   📖 Code: ${course.code}\n`;
-        courseList += `   ⏱️ Duration: ${course.duration}\n`;
-        courseList += `   � Degree: ${capitalizeCase(course.degree)}\n`;
-        courseList += `   ✅ Entrance Exam: ${course.eligibility?.entranceExam || "12th pass"}\n`;
-        
-        // Show eligibility requirements if available
-        if (course.eligibility?.requiredSubjects && course.eligibility.requiredSubjects.length > 0) {
-          courseList += `   📚 Required Subjects: ${course.eligibility.requiredSubjects.join(", ")}\n`;
-        }
-        
-        // Show career paths if available
-        if (course.careerPaths && course.careerPaths.length > 0) {
-          const careers = course.careerPaths.slice(0, 2).map(c => c.jobTitle || c).join(", ");
-          courseList += `   💼 Career Paths: ${careers}\n`;
-        }
-        
-        // Show job profiles if available
-        if (course.jobProfiles && course.jobProfiles.length > 0) {
-          const jobs = course.jobProfiles.slice(0, 2).join(", ");
-          courseList += `   👔 Job Profiles: ${jobs}\n`;
-        }
-        
-        // Show average salary if available
-        if (course.averageSalary) {
-          courseList += `   💰 Average Salary: ${course.averageSalary}\n`;
-        }
-        
-        courseList += `\n`;
-      });
-
-      courseList += `✅ **Next Steps:**\n- Find colleges offering these courses\n- Compare government vs private colleges\n- Get detailed career information`;
-
-      return {
-        type: "courses",
-        text: courseList,
-        suggestions: [
-          "Which colleges offer these?",
-          "Show government colleges",
-          "Career recommendations",
-        ],
-        data: courses,
-      };
-    } catch (error) {
-      console.error("Error fetching courses:", error);
-      return {
-        type: "error",
-        text: `❌ **Error Fetching Courses**\n\nUnable to fetch course data at the moment. Please try again in a moment.\n\n**In the meantime, you can:**\n✓ Browse colleges in your area\n✓ Get college recommendations\n✓ Explore other options`,
-        suggestions: [
-          "Try again",
-          "Show colleges",
-          "Career guidance",
-        ],
-      };
-    }
-  }
-
-  // Recommendation based on stream
-  if (messageLower.match(/recommend|best|suited|for\s+me|match|which\s+college/i)) {
-    try {
-      const stream = userProfile.stream || "science";
-      const courses = await getCoursesByStream(stream);
-      
-      // Fetch both government and private colleges
-      const govColleges = await fetchCollegesByType(
-        userProfile.state,
-        userProfile.district,
-        "government"
-      );
-      const pvtColleges = await fetchCollegesByType(
-        userProfile.state,
-        userProfile.district,
-        "private"
-      );
-
-      let recommendation = `🎯 **Personalized College Recommendations**\n\n`;
-      recommendation += `👤 **Your Profile:**\n`;
-      recommendation += `- Class: ${capitalizeCase(userProfile.class)}\n`;
-      recommendation += `- Stream: ${capitalizeCase(stream)}\n`;
-      recommendation += `- Location: ${userProfile.city}, ${userProfile.district}, ${userProfile.state}\n\n`;
-
-      recommendation += `📚 **Recommended Courses** (${capitalizeCase(stream)} Stream):\n`;
-      courses.slice(0, 3).forEach((c, i) => {
-        recommendation += `${i + 1}. ${c.name} (${c.duration})\n`;
-      });
-
-      recommendation += `\n🏫 **Available Colleges in Your Area:**\n`;
-      recommendation += `- 🏛️ Government Colleges: ${govColleges.length} options\n`;
-      recommendation += `- 🏢 Private Colleges: ${pvtColleges.length} options\n`;
-
-      recommendation += `\n✅ **Recommended Path for You:**\n`;
-      recommendation += `1. **Government Colleges** - Better for cost-effectiveness and reputation\n`;
-      recommendation += `   - Established infrastructure\n`;
-      recommendation += `   - Lower fees\n`;
-      recommendation += `   - Strong faculty\n\n`;
-      
-      recommendation += `2. **Private Colleges** - Modern facilities and flexibility\n`;
-      recommendation += `   - Advanced labs and resources\n`;
-      recommendation += `   - Industry partnerships\n`;
-      recommendation += `   - Career guidance programs\n\n`;
-
-      recommendation += `🚀 **Your Next Steps:**\n`;
-      recommendation += `1. Compare government colleges in your area\n`;
-      recommendation += `2. Check private colleges for modern facilities\n`;
-      recommendation += `3. Review courses offered by each college\n`;
-      recommendation += `4. Take our Career Quiz for deeper insights\n`;
-      recommendation += `5. Save your favorite colleges`;
-
-      return {
-        type: "recommendation",
-        text: recommendation,
-        suggestions: [
-          "Show government colleges",
-          "Show private colleges",
-          "Tell me about courses",
-        ],
-        data: { govColleges, pvtColleges, courses },
-      };
-    } catch (error) {
-      console.error("Recommendation error:", error);
-      const courses = await getCoursesByStream(userProfile.stream || "science");
-      return {
-        type: "recommendation",
-        text: `💡 **Personalized Recommendation for You**\n\n👤 **Your Profile:**\n- Class: ${capitalizeCase(userProfile.class)}\n- Stream: ${capitalizeCase(userProfile.stream) || "Science"}\n- Location: ${userProfile.city}, ${userProfile.district}, ${userProfile.state}\n\n📚 **Recommended Courses:**\n${courses
-          .slice(0, 3)
-          .map((c, i) => `${i + 1}. ${c.name}`)
-          .join("\n")}\n\n**Next Steps:**\n1. ✅ View colleges offering these courses\n2. ✅ Check government and private options\n3. ✅ Compare fees and facilities\n4. ✅ Take the Career Quiz for deeper insights\n\n**Would you like to:**\n- See colleges in your area?\n- Know more about a specific course?\n- Compare government vs private colleges?`,
-        suggestions: [
-          "Show colleges",
-          "Career guidance",
-          "Available courses",
-        ],
-      };
-    }
-  }
-
-  // General career advice
-  if (messageLower.match(/career|guidance|advice|help|guide|stream|choose|subject/i)) {
-    return {
-      type: "advice",
-      text: `🎯 **Career Guidance & Suggestions**\n\nBased on **Class ${userProfile.class}** students:\n\n**If you're interested in:**\n- 🔬 **Science** → Engineering, Medical, Research fields\n- 📊 **Commerce** → Business, Finance, Accounting, Economics\n- 📖 **Arts** → Humanities, Social Sciences, Administration\n\n**My Suggestions for You:**\n1. **Complete your profile** with interests and subjects\n2. **Take the Psychometric Test** on your Dashboard\n3. **Take the Career Quiz** to identify suitable fields\n4. **Explore colleges** in your area\n5. **Compare courses** and career outcomes\n\n**Available in your area (${userProfile.city}):**\n- Government colleges with better infrastructure\n- Private colleges with modern facilities\n- Specialized coaching centers\n\n**What would you like to do next?**\n- View colleges\n- Take a career assessment\n- Know about specific courses`,
-      suggestions: [
-        "Show colleges nearby",
-        "Career assessment",
-        "Course details",
-      ],
-    };
-  }
-
-  // Default response for unknown queries
-  return {
-    type: "default",
-    text: `I didn't quite understand that. Let me help you better! 🎓\n\n**I can assist with:**\n\n✅ **Finding Colleges**\n  - "Show government colleges"\n  - "Tell me about private colleges"\n  - "Colleges in my area"\n\n✅ **Course Information**\n  - "What courses are available?"\n  - "Tell me about engineering courses"\n  - "Commerce stream courses"\n\n✅ **Career Guidance**\n  - "Recommend colleges for me"\n  - "Career advice based on my profile"\n  - "Suitable streams for my score"\n\n✅ **Location-based Help**\n  - You're in: **${userProfile.city}, ${userProfile.district}, ${userProfile.state}**\n\n**Try asking:** "Which colleges are best for me?"`,
-    suggestions: [
-      "Show government colleges",
-      "Available courses",
-      "Career recommendations",
-    ],
-  };
 }
 
 async function fetchCollegesByType(state, district, type) {

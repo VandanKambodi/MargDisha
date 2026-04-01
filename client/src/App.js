@@ -25,6 +25,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ChatbotWidget from "./components/ChatbotWidget";
 
 function AppContent() {
   const location = useLocation();
@@ -125,6 +126,7 @@ function AppContent() {
           }
         />
       </Routes>
+      {shouldShowNavbar && <ChatbotWidget />}
     </div>
   );
 }

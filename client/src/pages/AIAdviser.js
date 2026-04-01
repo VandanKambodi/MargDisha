@@ -108,9 +108,17 @@ const AIAdviser = () => {
 
     try {
       const token = localStorage.getItem("token");
+      const historyToSend = messages.slice(-10).map(m => ({
+        role: m.type === "user" ? "user" : "assistant",
+        content: m.type === "user" ? m.content : m.content.text || m.content
+      }));
+
       const response = await axios.post(
         `${API}/chat`,
-        { message: messageText },
+        { 
+          message: messageText,
+          history: historyToSend
+        },
         {
           headers: { Authorization: `Bearer ${token}` },
         },

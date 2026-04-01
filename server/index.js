@@ -11,6 +11,7 @@ const streamQuizRoutes = require("./routes/streamQuiz");
 const externalCollegesRoutes = require("./routes/externalColleges");
 const savedRoutes = require("./routes/saved");
 const aiAdviserRoutes = require("./routes/aiAdviser");
+const careerChatbotRoutes = require("./routes/careerChatbot");
 
 // Import all models to register them with Mongoose
 require("./models/User");
@@ -39,6 +40,8 @@ app.use("/api/external-colleges", externalCollegesRoutes);
 app.use("/api/saved", savedRoutes);
 // AI Personal Adviser Chatbot
 app.use("/api/ai-adviser", aiAdviserRoutes);
+// Gemini-powered Career Chatbot (floating widget)
+app.use("/api/career-chatbot", careerChatbotRoutes);
 
 // MongoDB connection
 mongoose
