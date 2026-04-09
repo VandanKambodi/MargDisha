@@ -13,10 +13,6 @@ MargDisha enables students and career seekers to:
 - **Track progress** and test history in a user profile.
 - **Admin features** to seed data, manage questions, colleges, and courses.
 
-## Screenshots
-_Replace these with your own repository screenshots (optional):_
-<img width="1200" alt="screenshot-1" src="https://github.com/user-attachments/assets/placeholder-1" />
-<img width="1200" alt="screenshot-2" src="https://github.com/user-attachments/assets/placeholder-2" />
 
 ## Features
 
@@ -126,6 +122,3 @@ npm run seed-courses
 3. Commit changes (`git commit -m "Add feature"`)
 4. Push to your branch (`git push origin feature-name`)
 5. Open a Pull Request
-
-If you'd like, I can also create a short CONTRIBUTING.md and add a sample .env.example file. Want me to do that?
-
